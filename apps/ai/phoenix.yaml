@@ -1,6 +1,6 @@
 # Arize Phoenix: trace & evaluasi LLM (≈ CloudWatch/X-Ray untuk LLM). Data SQLite di PVC.
 # Auth Phoenix dimatikan supaya LiteLLM bisa mengirim trace tanpa API key (hanya dari dalam cluster);
-# UI di-ingress dilindungi basic auth Traefik (secret ai-secrets → phoenix-auth).
+# UI di-ingress dilindungi basic auth Traefik (secret phoenix-auth).
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -78,7 +78,7 @@ metadata:
   name: phoenix-auth
 spec:
   basicAuth:
-    secret: ai-secrets          # key "users" = baris htpasswd (bcrypt)
+    secret: phoenix-auth        # Traefik: secret harus berisi tepat 1 key ("users", htpasswd bcrypt)
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

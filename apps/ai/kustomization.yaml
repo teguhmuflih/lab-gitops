@@ -8,4 +8,4 @@ configMapGenerator:
   - name: litellm-config
     files: [config.yaml=litellm-config.yaml]
 generators:
-  - secret-generator.yaml    # KSOPS: ai-secrets (LITELLM_MASTER_KEY, users = htpasswd Phoenix)
+  - secret-generator.yaml    # KSOPS: ai-secrets (LITELLM_MASTER_KEY), phoenix-auth (htpasswd)

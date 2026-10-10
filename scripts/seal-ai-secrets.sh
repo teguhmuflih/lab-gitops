@@ -3,7 +3,8 @@
 # dari root repo ini: kunci age & rahasia (dibuat sekali, dipakai ulang) hanya ada di runner.
 #   ./scripts/seal-ai-secrets.sh
 # Menulis:
-#   apps/ai/secret.enc.yaml                         ai-secrets: LITELLM_MASTER_KEY, users (htpasswd Phoenix)
+#   apps/ai/secret.enc.yaml                         ai-secrets: LITELLM_MASTER_KEY
+#   apps/ai/phoenix-auth.enc.yaml                   phoenix-auth: users (htpasswd; Traefik basicAuth butuh secret 1 key)
 #   apps/lab-app/overlays/{dev,prod}/llm.enc.yaml   lab-app-llm: LITELLM_URL, LITELLM_API_KEY
 # LiteLLM belum memakai database → belum ada virtual key; lab-app memakai master key.
 set -euo pipefail
@@ -32,6 +33,15 @@ metadata:
 type: Opaque
 stringData:
   LITELLM_MASTER_KEY: ${master}
+YAML
+
+seal apps/ai/phoenix-auth.enc.yaml <<YAML
+apiVersion: v1
+kind: Secret
+metadata:
+  name: phoenix-auth
+type: Opaque
+stringData:
   users: '${htpasswd}'
 YAML
 

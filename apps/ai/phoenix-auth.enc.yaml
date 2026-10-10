@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: phoenix-auth
+type: Opaque
+stringData:
+    users: ENC[AES256_GCM,data:+7EIuHuNUPTgWSm5R6pr3tzvguktDUAXJ4glkMAwm8Sm+VBlF2vNUMSIKV6Ek7Q5dGNho95/e7OR5yD5Lx2viq67,iv:zD1rltqU+WSAIDvRkryl8MR7jl2OhulJKWeQMd7SbH8=,tag:BEzEzJDz1zvgE97GGlc/wQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAyNTJvVFZWTGtZS3lEam10
+            dStlYmFHZGdhajFIRnZJby93eXY3bUl3c2hrCnI3dVFuUHhqejZOQXdXVjE0anI4
+            bE00bTVtUDNlQ2pmK1l1YkhKUklaUFEKLS0tIHMrdHllSzRYREZwODlobTVweWx1
+            MU1aU3hOeXJERjV4UER0YjhoSzVzczQKjoOXrGhykieqoAnoPQHouNW7XfATCHAs
+            fODjTrmu+YQpoKJ2sPFZRcVnoFPaR5ggVcJmwXchzlSF1lUcqej6sA==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1r6gsvw5hjzxkax9h9j52vk94spg9ajue04k05lcxffyw8xerd4nq4m05uj
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-10T15:28:18Z"
+    mac: ENC[AES256_GCM,data:0TKMkmRdhfYaefDBMh3ETya20ZqqQhM4ZYAfCf/iGks9L5jFxFMOwwgTCqJCl/c4Czu4Gi9jAzsxNq8TCCs50eKIfFOxLkh2HxJVe1h/w6e+cht0ErGWguGf+Sse/MFdnmZK+hEUHY3YR2T5P/InglFqvl6ofJyO0j3ovv+bWE4=,iv:pQFbCmOrxmb3JAOY6yIK5zcfEwxv+HQ5qx7Eaxx5Yrg=,tag:kkOdUXmV/5noBRf6pzLkow==,type:str]
+    version: 3.13.3
