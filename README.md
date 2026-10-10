@@ -7,8 +7,12 @@ argocd/apps/*.yaml        satu Application per aplikasi/lingkungan — dibaca Ap
                           (app-of-apps, di-bootstrap oleh proxmox-server: ansible/roles/argocd)
 apps/lab-app/base         Deployment, Service, Ingress
 apps/lab-app/overlays/dev   namespace lab-app-dev, sync OTOMATIS, tag diubah CI lab-app
-apps/lab-app/overlays/prod  namespace lab-app-prod, sync MANUAL (promosi = salin tag dev lewat PR)
+apps/lab-app/overlays/prod  namespace lab-app-prod, sync MANUAL
 ```
+
+Promosi ke prod: Actions → **promote-prod** → Run workflow (tag kosong = tag dev saat ini).
+Workflow memeriksa image ada di GHCR, lalu meng-commit tag ke overlay prod. Deploy baru terjadi
+setelah `lab-app-prod` di-sync manual di Argo CD.
 
 Secret dienkripsi **sops + age** (`*.enc.yaml`, hanya `data`/`stringData`). Argo CD mendekripsi
 lewat KSOPS di repo-server. Membuat ulang secret DB: jalankan `scripts/seal-db-secret.sh dev|prod`

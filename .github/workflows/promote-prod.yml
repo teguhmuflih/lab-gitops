@@ -1,0 +1,40 @@
+# Promosi lab-app ke prod: salin tag image (default: tag dev saat ini) ke overlay prod.
+# Commit ini belum men-deploy apa pun — Argo CD lab-app-prod tetap sync MANUAL sebagai gerbang terakhir.
+name: promote-prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag image, mis. sha-1a2b3c4 (kosong = tag dev saat ini)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gitops-prod
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: salin tag ke overlay prod
+        env:
+          TAG_IN: ${{ inputs.tag }}
+        run: |
+          dev=apps/lab-app/overlays/dev/kustomization.yaml
+          prod=apps/lab-app/overlays/prod/kustomization.yaml
+          tag=${TAG_IN:-$(sed -nE 's|^\s*newTag:\s*(\S+).*|\1|p' "$dev")}
+          [[ "$tag" =~ ^sha-[0-9a-f]{7}$ ]] || { echo "::error::tag tidak valid: '$tag'"; exit 1; }
+          docker manifest inspect "ghcr.io/teguhmuflih/lab-app:${tag}" >/dev/null \
+            || { echo "::error::image ghcr.io/teguhmuflih/lab-app:${tag} tidak ada"; exit 1; }
+          sed -i -E "s|^(\s*newTag:\s*)\S+|\1${tag}|" "$prod"   # ganti nilai, komentar tetap
+          git config user.name "lab-gitops-promote"
+          git config user.email "lab-gitops-promote@users.noreply.github.com"
+          git commit -am "lab-app prod → ${tag}" || { echo "prod sudah di ${tag}"; exit 0; }
+          git push
+          echo "Prod → \`${tag}\`. Deploy: sync manual \`lab-app-prod\` di Argo CD." >> "$GITHUB_STEP_SUMMARY"

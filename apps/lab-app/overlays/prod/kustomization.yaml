@@ -7,7 +7,7 @@ generators:
   - secret-generator.yaml    # KSOPS: dekripsi secret.enc.yaml di repo-server Argo CD
 images:
   - name: ghcr.io/teguhmuflih/lab-app
-    newTag: PLACEHOLDER      # promosi: salin tag dari overlay dev lewat commit/PR 
+    newTag: PLACEHOLDER      # diubah workflow promote-prod (salin tag dev)
 patches:
   - target: { kind: Deployment, name: lab-app }
     patch: |-
