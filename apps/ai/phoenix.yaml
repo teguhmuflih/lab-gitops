@@ -25,6 +25,9 @@ spec:
     metadata:
       labels: { app: phoenix }
     spec:
+      # Service "phoenix" membuat Kubernetes menyuntik PHOENIX_PORT=tcp://IP:PORT ke pod →
+      # Phoenix membacanya sebagai port dan crash. Matikan variabel service link.
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -38,6 +41,7 @@ spec:
             - { name: otlp-grpc, containerPort: 4317 }
           env:
             - { name: PHOENIX_WORKING_DIR, value: /data }
+            - { name: PHOENIX_PORT, value: "6006" }
             - { name: PHOENIX_TELEMETRY_ENABLED, value: "false" }
           volumeMounts:
             - { name: data, mountPath: /data }
