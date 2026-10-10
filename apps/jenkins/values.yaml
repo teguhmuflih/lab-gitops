@@ -1,0 +1,76 @@
+# Jenkins (modul belajar, fase 8) — chart jenkins 5.9.64, Jenkins LTS 2.568.3.
+# CI utama lab tetap GitHub Actions; Jenkins menjalankan pipeline yang sama (test lab-app) untuk
+# belajar Jenkinsfile, agent pod Kubernetes, JCasC, dan Job DSL. Matikan: hapus argocd/apps/jenkins.yaml.
+controller:
+  image:
+    tag: "2.568.3-jdk21@sha256:c1e4c349365f6d16d88595b2c5f7e8ff39b8ae1d061f62420bac193b4b9616d0"
+    pullPolicy: IfNotPresent
+  admin:
+    createSecret: false
+    existingSecret: jenkins-admin          # KSOPS (secret.enc.yaml): jenkins-admin-user / -password
+  # daftar = default chart 5.9.64 + job-dsl + junit; semua versi dikunci (rilis ≤ 2026-09-26)
+  installPlugins:
+    - kubernetes:4557.ve746270f672f
+    - workflow-aggregator:608.v67378e9d3db_1
+    - git:5.10.1
+    - configuration-as-code:2121.v86fe99d4b_b_a_b_
+    - job-dsl:3732.v9a_c49a_61a_313
+    - junit:1431.vc0d98912a_756
+  installLatestPlugins: false
+  installLatestSpecifiedPlugins: false
+  testEnabled: false                     # pod uji Helm tidak berguna di GitOps
+  javaOpts: "-XX:MaxRAMPercentage=60 -XX:+UseG1GC"
+  resources:
+    requests: { cpu: 100m, memory: 512Mi }
+    limits: { memory: 1536Mi }
+  # rancangan: Jenkins di 202 k3s-agent (201 sudah memuat Argo CD + control plane)
+  nodeSelector:
+    kubernetes.io/hostname: k3s-agent
+  jenkinsUrl: https://jenkins.apps.lab.internal/
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hostName: jenkins.apps.lab.internal
+  JCasC:
+    configScripts:
+      welcome: |
+        jenkins:
+          systemMessage: "Lab pve — Jenkins modul belajar (fase 8). CI utama: GitHub Actions."
+      jobs: |
+        jobs:
+          - script: >
+              pipelineJob('lab-app') {
+                description('Test lab-app (pytest) di agent pod Kubernetes. Jenkinsfile ada di repo lab-app.')
+                logRotator { numToKeep(20) }
+                properties {
+                  pipelineTriggers {
+                    triggers {
+                      pollSCM { scmpoll_spec('H/15 * * * *') }
+                    }
+                  }
+                }
+                definition {
+                  cpsScm {
+                    scm {
+                      git {
+                        remote { url('https://github.com/teguhmuflih/lab-app.git') }
+                        branch('*/main')
+                      }
+                    }
+                    scriptPath('Jenkinsfile')
+                    lightweight(true)
+                  }
+                }
+              }
+
+agent:
+  image:
+    tag: "3385.vf1123fb_515da_-1@sha256:6dbeabd484bb3926293de0b337117f7ad8bb2c0ba1a425b3e34e3d3983b5e1f9"
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 1000m, memory: 512Mi }
+
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 8Gi

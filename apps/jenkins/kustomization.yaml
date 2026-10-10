@@ -1,0 +1,7 @@
+# Dibaca Argo CD sebagai sumber kedua aplikasi jenkins (sumber pertama = chart Helm).
+# values.yaml di folder ini dipakai lewat $values, bukan oleh kustomize.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: jenkins
+generators:
+  - secret-generator.yaml    # KSOPS: jenkins-admin (scripts/seal-jenkins-secret.sh)

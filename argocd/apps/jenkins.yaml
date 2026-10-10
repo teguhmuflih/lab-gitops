@@ -1,0 +1,32 @@
+# Jenkins (fase 8, modul belajar). Multi-source: chart resmi + values & secret dari repo ini.
+# Mematikan modul: hapus file ini (finalizer menghapus semua resource; PVC ikut terhapus).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jenkins
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.jenkins.io
+      chart: jenkins
+      targetRevision: 5.9.64
+      helm:
+        releaseName: jenkins
+        valueFiles:
+          - $values/apps/jenkins/values.yaml
+    - repoURL: https://github.com/teguhmuflih/lab-gitops.git
+      targetRevision: main
+      ref: values
+      path: apps/jenkins            # secret admin (KSOPS)
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: jenkins
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
