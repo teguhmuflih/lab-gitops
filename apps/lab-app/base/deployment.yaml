@@ -31,6 +31,13 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef: { name: lab-app-db, key: DATABASE_URL }
+            # RAG lewat LiteLLM (namespace ai). optional: tanpa secret, /rag/* menjawab 503
+            - name: LITELLM_URL
+              valueFrom:
+                secretKeyRef: { name: lab-app-llm, key: LITELLM_URL, optional: true }
+            - name: LITELLM_API_KEY
+              valueFrom:
+                secretKeyRef: { name: lab-app-llm, key: LITELLM_API_KEY, optional: true }
           livenessProbe:
             httpGet: { path: /healthz, port: http }
           readinessProbe:

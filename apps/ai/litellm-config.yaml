@@ -1,0 +1,17 @@
+# Konfigurasi LiteLLM (dibuat jadi ConfigMap ber-hash oleh kustomization.yaml → perubahan = pod baru)
+model_list:
+  - model_name: lab-chat            # qwen2.5:3b, multibahasa, tanpa mode "thinking"
+    litellm_params:
+      model: ollama_chat/qwen2.5:3b
+      api_base: http://10.10.10.20:11434
+      keep_alive: 30m
+  - model_name: lab-embed           # 1024 dimensi (kolom vector(1024) di lab-app)
+    litellm_params:
+      model: ollama/qwen3-embedding:0.6b
+      api_base: http://10.10.10.20:11434
+litellm_settings:
+  callbacks: ["arize_phoenix"]
+  request_timeout: 300              # CPU i3: jawaban panjang bisa > 1 menit
+  drop_params: true
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: lab-app-llm
+type: Opaque
+stringData:
+    LITELLM_URL: ENC[AES256_GCM,data:fJe3PzZy4uZyDKxBOZUyM/FYZfHHTN/jdaA=,iv:58HXLcaeSX0hl/DGtdk2w/ClEDi1koIdXmtn+W416hw=,tag:oasz7fH9RhQjhFMeyDRZJw==,type:str]
+    LITELLM_API_KEY: ENC[AES256_GCM,data:bpWV/sGauPVuslwX5j02PPvqdm/VGdKbQF0jZgD8Uy+XijhnWGiCNg1jAw==,iv:AJNWKDjnhlN7oaV0LrIVJBzuRDiUX8VjxGDdrJ4xG/E=,tag:Fcv4vuhdoO9pINFVr4dviQ==,type:str]
+sops:
+    age:
+        - enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBpN0tKa2JJRXdOU0NwVVVx
+            ZnVxL1oxNUFNczZUUzhzY3RxUG83b2dpVlJZClVJRUxVNkEyS1RXSE1vWlVvaGZu
+            OTU2Q1o1UEwyWjJ4U0RLVHJTdlhpNUkKLS0tIEFmMnZuNE5TQW41NG8wYU9KU2h3
+            SDJyRDF3RVJvNXBSMHl4SkhTMFB4bm8KZJxy/CAst//iQP8DKF7Zek2lNU9EgtSV
+            TlraUlAcXyRurOKD/XvCSGhiaAUWZUgIfGwmDydPJ878YIGm3oyB8Q==
+            -----END AGE ENCRYPTED FILE-----
+          recipient: age1r6gsvw5hjzxkax9h9j52vk94spg9ajue04k05lcxffyw8xerd4nq4m05uj
+    encrypted_regex: ^(data|stringData)$
+    lastmodified: "2026-10-10T14:40:12Z"
+    mac: ENC[AES256_GCM,data:E/P1qlIinEJwpaMYyB4F8ylQgE2WgvGiP2k352qCYMO3QW0kAD1lxx3FOH7qfz6AY3XR1vXBIMDj8UF+crY20p9uuMZhKIhaTTMy25LbWVzbKk+sKIgWJxuzFzaZW8m82rZUSuKae3Dbn6XR24RbO5efKXAYJewy2qxHTt4U2mQ=,iv:lq5aLnR/k6VkTbOBL8b0Kxmsy8nA4aZIjnjOO1i4dmI=,tag:mV8XXXU0qlz+PAcLxmhaFw==,type:str]
+    version: 3.13.3

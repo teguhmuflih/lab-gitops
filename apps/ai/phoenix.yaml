@@ -1,0 +1,94 @@
+# Arize Phoenix: trace & evaluasi LLM (≈ CloudWatch/X-Ray untuk LLM). Data SQLite di PVC.
+# Auth Phoenix dimatikan supaya LiteLLM bisa mengirim trace tanpa API key (hanya dari dalam cluster);
+# UI di-ingress dilindungi basic auth Traefik (secret ai-secrets → phoenix-auth).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: phoenix-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: 5Gi }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phoenix
+  labels: { app: phoenix }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }   # SQLite di PVC RWO: jangan ada dua pod sekaligus
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: { app: phoenix }
+  template:
+    metadata:
+      labels: { app: phoenix }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: phoenix
+          image: arizephoenix/phoenix:version-20.16.0@sha256:d55a4ffac8c670e2d0bf72e44e81e32a73e832b7ce449e6e4567487adfa9d8d6
+          ports:
+            - { name: http, containerPort: 6006 }   # UI + OTLP HTTP
+            - { name: otlp-grpc, containerPort: 4317 }
+          env:
+            - { name: PHOENIX_WORKING_DIR, value: /data }
+            - { name: PHOENIX_TELEMETRY_ENABLED, value: "false" }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 15
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests: { cpu: 50m, memory: 300Mi }
+            limits: { memory: 1Gi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: phoenix-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phoenix
+spec:
+  selector: { app: phoenix }
+  ports:
+    - { name: http, port: 6006, targetPort: http }
+    - { name: otlp-grpc, port: 4317, targetPort: otlp-grpc }
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: phoenix-auth
+spec:
+  basicAuth:
+    secret: ai-secrets          # key "users" = baris htpasswd (bcrypt)
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: phoenix
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: ai-phoenix-auth@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: phoenix.apps.lab.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: phoenix, port: { name: http } }

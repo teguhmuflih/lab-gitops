@@ -1,0 +1,75 @@
+# LiteLLM (≈ Amazon Bedrock): satu API OpenAI-compatible untuk semua model.
+# Model lokal di 203 ai (Ollama, tanpa auth → sg-ai hanya menerima dari +k3s). Tiap panggilan
+# di-trace ke Phoenix lewat OTLP. Tanpa database: hanya master key (belum ada virtual key/spend).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litellm
+  labels: { app: litellm }
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: { app: litellm }
+  template:
+    metadata:
+      labels: { app: litellm }
+    spec:
+      securityContext:
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: litellm
+          image: ghcr.io/berriai/litellm:v1.101.2@sha256:7b51c4228797a1afedab58c8b43a627c03497f4e470a65d6e2a9bef5a983664c
+          args: ["--config", "/etc/litellm/config.yaml", "--port", "4000", "--num_workers", "1"]
+          ports:
+            - { name: http, containerPort: 4000 }
+          env:
+            - name: LITELLM_MASTER_KEY
+              valueFrom:
+                secretKeyRef: { name: ai-secrets, key: LITELLM_MASTER_KEY }
+            - { name: PHOENIX_COLLECTOR_HTTP_ENDPOINT, value: "http://phoenix.ai.svc:6006/v1/traces" }
+            - { name: LITELLM_TELEMETRY, value: "False" }
+          volumeMounts:
+            - { name: config, mountPath: /etc/litellm, readOnly: true }
+          readinessProbe:
+            httpGet: { path: /health/readiness, port: http }
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health/liveliness, port: http }
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 300Mi }
+            limits: { memory: 1Gi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+      volumes:
+        - name: config
+          configMap: { name: litellm-config }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: litellm
+spec:
+  selector: { app: litellm }
+  ports:
+    - { name: http, port: 4000, targetPort: http }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: litellm
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: litellm.apps.lab.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: litellm, port: { name: http } }
