@@ -7,7 +7,7 @@ generators:
   - secret-generator.yaml    # KSOPS: dekripsi secret.enc.yaml di repo-server Argo CD
 images:
   - name: ghcr.io/teguhmuflih/lab-app
-    newTag: PLACEHOLDER      # diubah otomatis oleh CI lab-app 
+    newTag: sha-dba8f88      # diubah otomatis oleh CI lab-app 
 patches:
   - target: { kind: Deployment, name: lab-app }
     patch: |-
