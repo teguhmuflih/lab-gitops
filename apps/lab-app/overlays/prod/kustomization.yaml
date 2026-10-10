@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: lab-app-prod
+resources:
+  - ../../base
+generators:
+  - secret-generator.yaml    # KSOPS: dekripsi secret.enc.yaml di repo-server Argo CD
+images:
+  - name: ghcr.io/teguhmuflih/lab-app
+    newTag: PLACEHOLDER      # promosi: salin tag dari overlay dev lewat commit/PR 
+patches:
+  - target: { kind: Deployment, name: lab-app }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/value
+        value: prod
+  - target: { kind: Ingress, name: lab-app }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: lab-app.apps.lab.internal

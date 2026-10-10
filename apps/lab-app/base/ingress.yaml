@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lab-app
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: lab-app.apps.lab.internal   # di-patch per overlay
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: lab-app, port: { name: http } }

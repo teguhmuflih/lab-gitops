@@ -1,0 +1,5 @@
+# sops + age: hanya field data/stringData yang dienkripsi; kunci privat ada di runner & Argo CD (secret sops-age)
+creation_rules:
+  - path_regex: .*\.enc\.yaml$
+    encrypted_regex: ^(data|stringData)$
+    age: age1r6gsvw5hjzxkax9h9j52vk94spg9ajue04k05lcxffyw8xerd4nq4m05uj

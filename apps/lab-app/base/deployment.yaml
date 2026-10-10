@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab-app
+  labels: { app: lab-app }
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: { app: lab-app }
+  template:
+    metadata:
+      labels: { app: lab-app }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:   # satu pod per node bila memungkinkan
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: { matchLabels: { app: lab-app } }
+      containers:
+        - name: lab-app
+          image: ghcr.io/teguhmuflih/lab-app   # tag di-set overlay (kustomize images)
+          ports:
+            - { name: http, containerPort: 8000 }
+          env:
+            - { name: APP_ENV, value: base }
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: { name: lab-app-db, key: DATABASE_URL }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
