@@ -1,0 +1,42 @@
+# Worker cek: 1 replica (dua replica = hasil ganda). Recreate supaya tidak ada dua checker saat rollout.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab-status-checker
+  labels: { app: lab-status, role: checker }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: { app: lab-status, role: checker }
+  template:
+    metadata:
+      labels: { app: lab-status, role: checker }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: checker
+          image: ghcr.io/teguhmuflih/lab-status
+          command: ["python", "-m", "app.checker"]
+          env:
+            - { name: TARGETS_FILE, value: /etc/lab-status/targets.yaml }
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: { name: lab-status-db, key: DATABASE_URL }
+          volumeMounts:
+            - { name: targets, mountPath: /etc/lab-status, readOnly: true }
+          resources:
+            requests: { cpu: 20m, memory: 48Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+      volumes:
+        - name: targets
+          configMap: { name: lab-status-targets }

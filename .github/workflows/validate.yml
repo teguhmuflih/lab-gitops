@@ -1,5 +1,5 @@
 # Validasi skema manifest (kubeconform) untuk setiap push & PR ke main.
-# Dikecualikan: secret terenkripsi (*.enc.yaml), generator KSOPS, values Helm, dan data ConfigMap (litellm-config.yaml).
+# Dikecualikan: secret terenkripsi (*.enc.yaml), generator KSOPS, values Helm, dan data ConfigMap (litellm-config.yaml, targets.yaml).
 name: validate
 
 on:
@@ -33,5 +33,5 @@ jobs:
         run: |
           files=$(find . -name '*.yaml' -not -path './.git/*' -not -name '*.enc.yaml' \
             -not -name 'secret-generator.yaml' -not -name '.sops.yaml' \
-            -not -name 'values.yaml' -not -name 'litellm-config.yaml')
+            -not -name 'values.yaml' -not -name 'litellm-config.yaml' -not -name 'targets.yaml')
           /tmp/kubeconform -summary -strict -ignore-missing-schemas -kubernetes-version 1.36.0 $files

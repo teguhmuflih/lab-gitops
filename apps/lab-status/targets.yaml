@@ -1,0 +1,126 @@
+# Daftar komponen yang dicek lab-status tiap menit (dari pod di K3s → keluar lewat IP node, ipset +k3s).
+# name  = nama umum (aman untuk publik), detail = info internal (disembunyikan bila PUBLIC_MODE=1).
+# Mesin tanpa port yang boleh dijangkau dari K3s (bastion, runner, host) dicek lewat up{job="node"} di Prometheus.
+interval_seconds: 60
+timeout_seconds: 5
+retention_days: 35
+prometheus_url: http://monitor.lab.internal:9090
+targets:
+  # ---------- Jaringan & akses ----------
+  - id: edge
+    name: Gateway web
+    group: Jaringan & akses
+    detail: 101 edge Traefik → ingress K3s (lab-app.apps.lab.internal)
+    check: { type: http, url: "https://lab-app.apps.lab.internal/healthz", insecure: true }
+  - id: dns
+    name: DNS internal
+    group: Jaringan & akses
+    detail: 401 dns 10.10.30.10, query db.lab.internal
+    check: { type: dns, server: 10.10.30.10, name: db.lab.internal }
+  - id: bastion
+    name: Akses admin
+    group: Jaringan & akses
+    detail: 102 bastion (Tailscale), node-exporter
+    check: { type: prometheus, query: 'up{job="node",instance="bastion"}' }
+
+  # ---------- Platform ----------
+  - id: k3s-api
+    name: Kubernetes API
+    group: Platform
+    detail: kube-apiserver 10.43.0.1:443/livez (401 = hidup, anonim ditolak)
+    check: { type: http, url: "https://kubernetes.default.svc/livez", insecure: true, expect: [200, 401] }
+  - id: k3s-nodes
+    name: Node Kubernetes
+    group: Platform
+    detail: kube_node_status_condition Ready (201 + 202)
+    check: { type: prometheus, query: 'kube_node_status_condition{condition="Ready",status="true"}' }
+  - id: argocd
+    name: GitOps (Argo CD)
+    group: Platform
+    detail: argocd-server.argocd.svc/healthz
+    check: { type: http, url: "http://argocd-server.argocd.svc/healthz" }
+
+  # ---------- Data ----------
+  - id: postgres
+    name: Database
+    group: Data
+    detail: 301 db PostgreSQL 10.10.20.10:5432
+    check: { type: postgres }
+  - id: valkey
+    name: Cache
+    group: Data
+    detail: 301 db Valkey 10.10.20.10:6379
+    check: { type: tcp, host: db.lab.internal, port: 6379 }
+  - id: s3
+    name: Penyimpanan objek
+    group: Data
+    detail: 302 s3 Garage :3900 (403 anonim = hidup)
+    check: { type: http, url: "http://s3.lab.internal:3900/", expect: [403] }
+
+  # ---------- AI ----------
+  - id: ollama
+    name: Model AI lokal
+    group: AI
+    detail: 203 ai Ollama :11434/api/version
+    check: { type: http, url: "http://ai.lab.internal:11434/api/version" }
+  - id: litellm
+    name: Gateway AI
+    group: AI
+    detail: litellm.ai.svc:4000/health/liveliness
+    check: { type: http, url: "http://litellm.ai.svc:4000/health/liveliness" }
+  - id: phoenix
+    name: Tracing AI
+    group: AI
+    detail: phoenix.ai.svc:6006
+    check: { type: http, url: "http://phoenix.ai.svc:6006/" }
+
+  # ---------- Observability ----------
+  - id: prometheus
+    name: Metrik
+    group: Observability
+    detail: 403 monitor Prometheus :9090
+    check: { type: prometheus, query: 'up{job="monitoring",instance="prometheus"}' }
+  - id: alertmanager
+    name: Notifikasi alert
+    group: Observability
+    detail: 403 monitor Alertmanager :9093
+    check: { type: prometheus, query: 'up{job="monitoring",instance="alertmanager"}' }
+  - id: grafana
+    name: Dashboard
+    group: Observability
+    detail: 403 monitor Grafana :3000
+    check: { type: prometheus, query: 'up{job="monitoring",instance="grafana"}' }
+  - id: loki
+    name: Log
+    group: Observability
+    detail: 403 monitor Loki :3100
+    check: { type: prometheus, query: 'up{job="monitoring",instance="loki"}' }
+
+  # ---------- Aplikasi ----------
+  - id: lab-app-prod
+    name: Aplikasi (prod)
+    group: Aplikasi
+    detail: lab-app.lab-app-prod.svc/readyz
+    check: { type: http, url: "http://lab-app.lab-app-prod.svc/readyz" }
+  - id: lab-app-dev
+    name: Aplikasi (dev)
+    group: Aplikasi
+    detail: lab-app.lab-app-dev.svc/readyz
+    check: { type: http, url: "http://lab-app.lab-app-dev.svc/readyz" }
+
+  # ---------- Mesin ----------
+  - id: host-pve
+    name: Server fisik
+    group: Mesin
+    detail: host pve, node-exporter
+    check: { type: prometheus, query: 'up{job="node",instance="pve"}' }
+  - id: runner
+    name: CI runner
+    group: Mesin
+    detail: 402 runner, node-exporter
+    check: { type: prometheus, query: 'up{job="node",instance="runner"}' }
+  - id: all-nodes
+    name: Semua mesin virtual
+    group: Mesin
+    detail: up{job="node"} semua VM/LXC (error menyebut yang mati)
+    check: { type: prometheus, query: 'up{job="node"}' }

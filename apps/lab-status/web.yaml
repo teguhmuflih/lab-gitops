@@ -1,0 +1,77 @@
+# Web status: membaca hasil cek dari PostgreSQL. Tidak menjalankan cek sendiri.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab-status-web
+  labels: { app: lab-status, role: web }
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: { app: lab-status, role: web }
+  template:
+    metadata:
+      labels: { app: lab-status, role: web }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:   # satu pod per node bila memungkinkan
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: { matchLabels: { app: lab-status, role: web } }
+      containers:
+        - name: web
+          image: ghcr.io/teguhmuflih/lab-status   # tag di-set kustomization (images)
+          ports:
+            - { name: http, containerPort: 8000 }
+          env:
+            - { name: PUBLIC_MODE, value: "0" }   # "1" sebelum dibuka lewat Cloudflare Tunnel
+            - { name: TARGETS_FILE, value: /etc/lab-status/targets.yaml }
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: { name: lab-status-db, key: DATABASE_URL }
+          volumeMounts:
+            - { name: targets, mountPath: /etc/lab-status, readOnly: true }
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 20m, memory: 48Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+      volumes:
+        - name: targets
+          configMap: { name: lab-status-targets }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab-status
+spec:
+  selector: { app: lab-status, role: web }
+  ports:
+    - { name: http, port: 80, targetPort: http }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lab-status
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: status.apps.lab.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: lab-status, port: { name: http } }

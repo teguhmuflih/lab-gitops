@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: lab-status
+resources:
+  - web.yaml
+  - checker.yaml
+generators:
+  - secret-generator.yaml    # KSOPS: lab-status-db (DATABASE_URL), dibuat scripts/seal-status-secret.sh
+configMapGenerator:
+  - name: lab-status-targets
+    files:
+      - targets.yaml
+images:
+  - name: ghcr.io/teguhmuflih/lab-status
+    newTag: sha-0000000      # diubah otomatis oleh CI lab-status 
