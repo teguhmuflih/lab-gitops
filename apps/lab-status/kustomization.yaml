@@ -12,4 +12,4 @@ configMapGenerator:
       - targets.yaml
 images:
   - name: ghcr.io/teguhmuflih/lab-status
-    newTag: sha-0000000      # diubah otomatis oleh CI lab-status 
+    newTag: sha-c65369e      # diubah otomatis oleh CI lab-status 
